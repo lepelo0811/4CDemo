@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>舆图志·坊间徽州</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <main class="map-container">
+            <header class="map-header">
+                <h1>舆图志·坊间徽州</h1>
+            </header>
+            
+            <div id="svg-wrapper"></div>
+
+            <div class="intro-text">
+                <p>古徽州的建筑，并非散落于群山间的偶然。</p>
+                <p>从理水的村落到跨江的廊桥，从高耸的马头墙到森严的宗祠，</p>
+                <p>它们是古代先民面对皖南复杂的水土环境、宗族礼制与商业网络时，</p>
+                <p>所演算出的一套极其精密的空间算法与生存图谱。</p>
+            </div>
+
+            <div id="info-card" class="info-card hidden">
+                <button id="close-btn" class="close-btn">✕</button>
+                <div class="card-image-placeholder">
+                    <span>建筑线稿图区</span>
+                </div>
+                <div class="card-content">
+                    <h2 id="card-title">休宁·承启堂</h2>
+                    <p id="card-subtitle">Chengqi Hall, Xiuning</p>
+                    <div class="text-lines">
+                        <div class="line"></div>
+                        <div class="line"></div>
+                        <div class="line"></div>
+                        <div class="line short"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <aside class="sidebar">
+            <div class="search-box">搜索建筑或地点...</div>
+            <nav class="nav-tabs">
+                <button class="active">全部 / All</button>
+                <button>民居 / Residences</button>
+                <button>宗祠 / Ancestral Halls</button>
+                <button>桥梁 / Bridges</button>
+                <button>古道 / Ancient Trails</button>
+            </nav>
+        </aside>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+/* 基础重置 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Noto Serif SC", "SimSun", serif; background-color: #f8f6f0; color: #333; overflow: hidden; }
+
+.app-container { display: flex; height: 100vh; width: 100vw; flex-direction: row; }
+
+/* 地图主区域 */
+.map-container { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+
+/* 侧边栏样式 (右侧) */
+.sidebar { 
+    width: 60px; 
+    height: 100vh;
+    background: #f8f6f0; 
+    border-left: 1px solid rgba(0,0,0,0.08); 
+    display: flex; flex-direction: column; align-items: center; padding-top: 20px; 
+    position: relative; z-index: 40; 
+}
+.search-box { writing-mode: vertical-rl; padding: 20px 0; color: #888; border-bottom: 1px solid rgba(0,0,0,0.08); }
+.nav-tabs { display: flex; flex-direction: column; width: 100%; }
+.nav-tabs button { writing-mode: vertical-rl; padding: 20px 10px; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,0.08); cursor: pointer; font-family: inherit; transition: background 0.3s; }
+.nav-tabs button.active { background: #e8e5df; font-weight: bold; }
+.nav-tabs button:hover { background: #eee; }
+
+/* 标题样式 */
+.map-header { position: absolute; top: 50px; left: 50px; z-index: 30; pointer-events: none; }
+.map-header h1 { font-size: 2.8rem; font-weight: normal; letter-spacing: 4px; color: #222; }
+
+/* === 更新：SVG 包装器定位与放大破界 === */
+#svg-wrapper { 
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 60%; /* 将地图控制在左侧60%的空间内 */
+    display: flex; 
+    align-items: center; 
+    justify-content: flex-start; 
+    z-index: 10;
+}
+
+#svg-wrapper svg { 
+    height: 108vh; /* 高度设为108%，使其上下两端刚好超出屏幕 */
+    width: auto;
+    margin-left: -5%; /* 向左便宜5%，使其左侧刚好超出屏幕 */
+    object-fit: cover;
+}
+
+/* === 新增：右侧排版文本样式 === */
+.intro-text {
+    position: absolute;
+    right: 15%; /* 靠右放置 */
+    top: 50%;
+    transform: translateY(-50%); /* 垂直居中 */
+    writing-mode: vertical-rl; /* 核心：竖排文字，从右往左 */
+    z-index: 20;
+}
+
+.intro-text p {
+    font-size: 1.15rem;
+    color: #444;
+    letter-spacing: 4px;
+    margin-left: 40px; /* 在竖排模式下，margin-left相当于设置行间距 */
+    position: relative;
+    text-align: justify;
+}
+
+/* 利用伪元素在段落之间绘制竖向分割线 */
+.intro-text p:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 2%;
+    bottom: 2%;
+    left: -20px; /* 定位到两段文字的中间位置 */
+    width: 1px;
+    background-color: rgba(0, 0, 0, 0.12); /* 极淡的分割线 */
+}
+
+/* === SVG 地图区块样式 === */
+#background path { 
+    fill: transparent !important; 
+    stroke: rgba(0,0,0,0.08) !important; 
+    stroke-width: 1px;
+    pointer-events: none; 
+}
+
+#jixi, #shexian, #xiuning, #wuyuan, #yixian, #qimen path, #qimen {
+    fill: #d0d0d0 !important; 
+    stroke: rgba(0,0,0,0.25) !important;
+    stroke-width: 1.2px;
+    cursor: pointer;
+    transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+#jixi:hover, #shexian:hover, #xiuning:hover, #wuyuan:hover, #yixian:hover, #qimen:hover {
+    fill: #b8b8b8 !important;
+    stroke: rgba(0,0,0,0.8) !important;
+}
+
+.active-region { fill: #a0a0a0 !important; stroke: #111 !important; }
+
+/* 动态文字样式 */
+.svg-label { pointer-events: none; text-anchor: middle; dominant-baseline: central; font-family: "Noto Serif SC", "SimSun", serif; }
+.core-text { fill: #111; font-size: 15px; font-weight: bold; letter-spacing: 3px; filter: drop-shadow(0px 0px 3px rgba(248, 246, 240, 0.9)); z-index: 30;}
+
+/* 信息弹窗卡片：锚定在偏右下角 */
+.info-card { position: absolute; right: 8%; bottom: 8%; width: 320px; background: #fff; border: 1px solid #ddd; box-shadow: -10px 10px 30px rgba(0,0,0,0.08); padding: 25px; z-index: 40; transition: opacity 0.3s, transform 0.3s; }
+.info-card.hidden { opacity: 0; transform: translateY(20px); pointer-events: none; }
+.close-btn { position: absolute; top: 12px; right: 15px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #999; transition: color 0.2s;}
+.close-btn:hover { color: #333; }
+.card-image-placeholder { width: 100%; height: 160px; background: #f4f4f4; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: #aaa; border: 1px dashed #ddd;}
+.card-content h2 { font-size: 1.6rem; margin-bottom: 6px; font-weight: normal;}
+.card-content p { font-size: 0.9rem; color: #777; margin-bottom: 20px; font-family: sans-serif; }
+.text-lines .line { height: 6px; background: #eee; margin-bottom: 10px; width:
