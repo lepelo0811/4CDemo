@@ -1,6 +1,6 @@
-/* 基础重置与配色规范 */
+﻿/* 基础重置与配色规范 */
 :root {
-    --bg-color: #F4F4F0;         /* 暖灰底色，宣纸质感 */
+    --bg-color: #f4f4f0;         /* 暖灰底色，宣纸质感 */
     --text-main: #333333;        /* 主文字色 */
     --text-muted: #666666;       /* 次要文字色 */
     --accent-red: #C85D5D;       /* 朱砂红：强调、印章、建筑点 */
@@ -42,7 +42,7 @@ body {
 .map-container { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; background: var(--bg-color); }
 
 /* 左侧极简导航 */
-.sidebar-nav {
+.sidebar-nav { transform: translateZ(2000px); background: var(--bg-color);
     width: 60px; height: 100vh;
     background: transparent; border-right: 1px solid rgba(0,0,0,0.05);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -63,40 +63,61 @@ body {
 .nav-tabs button:hover { opacity: 1; }
 
 /* 标题样式设计 */
-.map-header { position: absolute; top: 40px; left: 90px; z-index: 30; pointer-events: none; display: flex; align-items: flex-start; gap: 15px; }
+.map-header { transform: translateZ(2000px); position: absolute; top: 40px; left: 90px; z-index: 30; pointer-events: none; display: flex; align-items: flex-start; gap: 15px; }
 .header-seal {
     width: 38px; height: 38px; border-radius: 2px; opacity: 0.9;
     margin-top: 9px; /* 往下调大约图像的四分之一高度 (即10px左右) */
     margin-right: -4px;
     object-fit: contain;
 }
-.map-header h1 { font-size: 2.2rem; font-weight: normal; letter-spacing: 6px; color: var(--text-main); margin-bottom: 5px; }
-.map-header .subtitle { font-family: sans-serif; font-size: 0.8rem; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; }
+.map-header h1 { font-size: 2.2rem; font-weight: normal; letter-spacing: 6px; color: rgb(123,103,72); margin-bottom: 5px; }
+.map-header .subtitle { font-family: sans-serif; font-size: 0.8rem; letter-spacing: 2px; color: rgb(123,103,72); text-transform: uppercase; }
 
 /* SVG 包装器定位右移让出导航空间 */
 #svg-wrapper { 
     position: absolute; top: 0; bottom: 0; left: 60px; right: 400px; /* 右侧留给面板 */
     display: flex; align-items: center; justify-content: center; z-index: 10;
-    transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); /* 为后续平移放大预留配合动画 */
+transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); /* 为后续平移放大预留配合动画 */
+      transform: perspective(1200px) rotateX(0deg) rotateZ(0deg) scale(0.5) translate(0px, 0px);
+    transform-style: preserve-3d; /* !!保证子层级拥有真正的3D透视厚度!! */
 }
 
-#svg-wrapper svg { 
-    height: 90vh; width: auto; object-fit: contain;
+/* 用于包裹原本SVG和HTML建筑层的3D实体画布 */
+#map-3d-wrap {
+    position: relative;
+    height: 180vh;
+    aspect-ratio: 757.5 / 821;
+    transform-style: preserve-3d; /* 透传3D结构给下属的marker图层 */
+}
+
+#map-3d-wrap svg {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
     filter: none;
+    transform-style: preserve-3d;
+}
+
+#html-arch-layer {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; /* 让事件穿透到下层建筑 */
+    transform-style: preserve-3d;
+    z-index: 1000;
 }
 
 /* SVG 地图区块核心样式 */
-#background path { 
-    fill: var(--bg-color) !important; /* 和页面背景色一致，使其彻底融入背景 */
-    stroke: rgba(0, 0, 0, 0.15) !important; /* 加深边缘线条的颜色 */
-    stroke-width: 1px; pointer-events: none; 
+#background path {
+    fill: transparent !important; /* 和页面背景色一致，使其彻底融入背景 */
+    stroke: rgba(0, 0, 0, 0.15) !important;
+    stroke-width: 1px; 
+    pointer-events: none;
 }
 
 /* 地图文字标签样式 */
 .svg-label { pointer-events: none; font-family: "Noto Serif SC", "SimSun", serif; }
 .core-text { 
     fill: var(--text-main); font-size: 15px; font-weight: bold; letter-spacing: 3px; 
-    filter: drop-shadow(0px 0px 4px rgba(244, 244, 240, 0.9)); 
+    filter: drop-shadow(0px 4px 10px rgba(244, 244, 240, 0.9)); 
 }
 .context-text { 
     fill: #A8A8A8; font-size: 12px; font-weight: normal; letter-spacing: 2px; /* 更浅的颜色和更小的字号 */
@@ -122,8 +143,18 @@ body {
     filter: brightness(0.85); /* 稍微降低亮度提升对比度 */
 }
 
+/* 六县核心部分的统一外包阴影效果，避免多个路径内部互相重叠阴影 */
+#core-shadow-group {
+    filter: drop-shadow(0px 12px 20px rgba(0,0,0,0.3));
+    transition: filter 0.4s ease;
+}
+/* 当聚焦缩放到某个县的时候取消外围阴影 */
+#svg-wrapper.is-focused #core-shadow-group {
+    filter: none;
+}
+
 /* 右侧排版区 */
-.right-panel {
+.right-panel { transform: translateZ(2000px);
     position: absolute; right: 0; top: 0; width: 400px; height: 100vh;
     background: linear-gradient(90deg, transparent, rgba(244, 244, 240, 0.9) 15%, var(--bg-color) 100%);
     backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center;
@@ -131,15 +162,19 @@ body {
 }
 
 .intro-text {
-    width: 60%; height: 60%; display: flex; justify-content: center; align-items: center;
+    width: 60%; height: 75%; display: block;
     writing-mode: vertical-rl; transition: opacity 0.4s, transform 0.4s;
 }
 .intro-text.hidden { opacity: 0; transform: translateX(20px); pointer-events: none; }
+.intro-text.fade-out { opacity: 0 !important; }
 .intro-text p {
-    font-size: 1.1rem; color: var(--text-muted); letter-spacing: 5px; margin-left: 35px;
+    font-size: 1.1rem; color: var(--text-muted); letter-spacing: 5px; margin-left: 20px; margin-right: 20px;
     position: relative; line-height: 1.8; text-align: justify;
 }
-.intro-text p:not(:last-child)::after {
+.intro-text p:first-child::before {
+    content: ''; position: absolute; top: 10%; bottom: 10%; right: -18px; width: 1px; background-color: rgba(0, 0, 0, 0.1);
+}
+.intro-text p:last-child::after {
     content: ''; position: absolute; top: 10%; bottom: 10%; left: -18px; width: 1px; background-color: rgba(0, 0, 0, 0.1);
 }
 
@@ -179,3 +214,146 @@ body {
 .bar-row:nth-child(1) .bar-fill { background: var(--text-main); }
 .bar-row:nth-child(2) .bar-fill { background: var(--ink-3); }
 .bar-row:nth-child(3) .bar-fill { background: var(--ink-5); }
+
+/* -- 二级滑动导航栏 -- */
+.sub-nav-panel {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%) translateX(-100%);
+    left: calc(10% + 50px); /* 10%是sidebar-nav初始位置, 50px是按钮大致宽度 */
+    width: 260px;
+    max-height: 80vh;
+    background: rgba(230, 224, 212, 0.95);
+    border-radius: 6px;
+    box-shadow: 2px 4px 15px rgba(0,0,0,0.15);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(139, 105, 82, 0.2);
+}
+
+.sub-nav-panel.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%) translateX(15px);
+}
+
+.sub-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(139, 105, 82, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(139, 105, 82, 0.05);
+}
+
+.sub-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #4a3f35;
+    letter-spacing: 2px;
+}
+
+.close-btn-small {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #8b6952;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+.close-btn-small:hover { color: #5c3a21; }
+
+.sub-nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 10px 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.sub-nav-list li {
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #5c3a21;
+    transition: background 0.3s;
+    border-left: 3px solid transparent;
+}
+
+.sub-nav-list li:hover {
+    background: rgba(139, 105, 82, 0.1);
+    border-left-color: #8b6952;
+}
+.sub-nav-list li.selected {
+    background: rgba(139, 105, 82, 0.15);
+    border-left-color: #5c3a21;
+    font-weight: 500;
+}
+.sub-nav-list li span {
+    color: #8b6952;
+    font-size: 0.85em;
+    margin-right: 6px;
+    opacity: 0.8;
+}
+
+/* -- 建筑图标层级控制 -- */
+#html-arch-layer .arch-pt {
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease !important;
+    /* 全局基准缩放比：原底座边长40，平时缩成小点 */
+    transform: scale(0.5) rotateX(0deg);
+    filter: sepia(1) hue-rotate(345deg) saturate(0.5) brightness(0.7);
+    pointer-events: auto; /* HTML 覆盖层自身是 pointer-events: none，但内部允许交互 */
+}
+#html-arch-layer .arch-pt:hover, 
+#html-arch-layer .arch-pt.is-highlighted {
+    filter: none !important; /* hover或图鉴选中时解除滤镜 */
+    transform: scale(0.5) rotateX(0deg); /* 平面模式下相应放大 */
+}
+
+/* 提示悬浮框 */
+.arch-tooltip {
+    position: absolute;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+    transform: translate(-50%, -100%);
+    margin-top: -10px;
+}
+.arch-tooltip.visible {
+    opacity: 1;
+}
+
+
+/* 3D视图下的建筑节点真·直立效果 */
+#svg-wrapper.is-focused .arch-pt {
+    /* 
+      因为现在的圆点节点是生存在 HTML `transform-style: preserve-3d` 当中，
+      地图本体被 rotateX(48deg) rotateZ(-3deg)
+      我们对图标施加反向抵消角度，图标直接能够以垂直于屏幕的角度(即面对摄像机)渲染，实现真立体！
+    */
+    transform: rotateZ(3deg) rotateX(-48deg) scale(0.6) translateY(-2px) !important;
+}
+#svg-wrapper.is-focused .arch-pt:hover,
+#svg-wrapper.is-focused .arch-pt.is-highlighted {
+    /* hover时更贴近镜头并保持朝向不变 */
+    transform: rotateZ(3deg) rotateX(-48deg) scale(1) translateY(-5px) !important;
+    filter: none !important; 
+    z-index: 1000;
+}
+

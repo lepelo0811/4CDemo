@@ -76,12 +76,26 @@
 
         <aside class="sidebar-nav">
             <nav class="nav-tabs">
-                <button class="active">全览<span class="eng">ALL</span></button>
-                <button>民居<span class="eng">RESIDENCE</span></button>
-                <button>官衙<span class="eng">OFFICE</span></button>
-                <button>桥梁<span class="eng">BRIDGE</span></button>
+                <button data-type="all" class="active">全览<span class="eng">ALL</span></button>
+                <button data-type="residence">民居<span class="eng">RESIDENCE</span></button>
+                <button data-type="office">官衙<span class="eng">OFFICE</span></button>
+                <button data-type="bridge">桥梁<span class="eng">BRIDGE</span></button>
             </nav>
         </aside>
+
+        <!-- 新增的二级滑动选择栏 -->
+        <div id="sub-nav-panel" class="sub-nav-panel hidden">
+            <div class="sub-header">
+                <h3 id="sub-nav-title">建筑列表</h3>
+                <button id="sub-nav-close" class="close-btn-small" aria-label="关闭">×</button>
+            </div>
+            <ul id="sub-nav-list" class="sub-nav-list">
+                <!-- 动态插入 <li>等等 -->
+            </ul>
+        </div>
+        
+        <!-- 用于建筑的悬浮提示框 -->
+        <div id="arch-tooltip" class="arch-tooltip hidden">名称</div>
     </div>
     <script src="script.js"></script>
 </body>
