@@ -7,10 +7,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1775397086210">
     <script src="marked.min.js"></script>
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+        <img src="./background/decorate_up.png" class="splash-decorate up" alt="">
+        <div class="splash-content">
+            <h1 class="splash-title">舆图志·筑意徽州</h1>
+            <p class="splash-subtitle">基于空间分布的古徽州建筑信息交互图鉴</p> 
+            <button id="enter-btn" class="enter-btn" disabled>正在准备画卷...</button>
+        </div>
+        <img src="./background/decorate_down.png" class="splash-decorate down" alt="">
+    </div>
     <div class="texture-overlay"></div>
 
     <div class="app-container">
@@ -86,6 +96,6 @@
         <!-- 用于建筑的悬浮提示框 -->
         <div id="arch-tooltip" class="arch-tooltip hidden">名称</div>
     </div>
-    <script src="script.js"></script>
+    <script src="script.js?v=1775397086210"></script>
 </body>
 </html>

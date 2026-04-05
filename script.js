@@ -76,11 +76,36 @@ document.addEventListener("DOMContentLoaded", () => {
     const infoCard = document.getElementById("info-card");
     const closeBtn = document.getElementById("close-btn");
 
+    
+    const svgWrapInitial = document.getElementById("svg-wrapper");
+    if(svgWrapInitial) svgWrapInitial.classList.add("initial-enter");
+
     Promise.all([
         fetch("./data/data.jsonl").then(res => res.text()).catch(e => { console.error("Could not load data.jsonl:", e); return ""; }),
         fetch('./map.svg').then(res => res.text())
     ]).then(([text, svgContent]) => {
         if(text) {
+        
+        const splashScreen = document.getElementById("splash-screen");
+        const enterBtn = document.getElementById("enter-btn");
+        const svgWrapperNode = document.getElementById("svg-wrapper");
+        
+        if (enterBtn) {
+            enterBtn.textContent = "点击进入";
+            enterBtn.disabled = false;
+            enterBtn.classList.add("pulse-animation");
+            
+            enterBtn.addEventListener("click", () => {
+                if(splashScreen) splashScreen.classList.add("is-hidden");
+                // Delay dropping the map view
+                setTimeout(() => {
+                    if(svgWrapperNode) {
+                        svgWrapperNode.classList.remove("initial-enter");
+                    }
+                }, 400); 
+            });
+        }
+
             const lines = text.trim().split("\n"); 
             lines.forEach(line => { 
                 if(!line) return; 
@@ -289,6 +314,44 @@ document.addEventListener("DOMContentLoaded", () => {
         svgElement.appendChild(maskGroup);
     }
 
+    window.focusCountyOnMap = function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const bbox = el.getBBox();
+        const targetX = bbox.x + bbox.width / 2;
+        const targetY = bbox.y + bbox.height / 2;
+        const cx = 378.75;
+        const cy = 410.5;
+        const vhPerUnit = 180 / 821;
+        const moveX = (cx - targetX) * vhPerUnit;
+        const moveY = (cy - targetY) * vhPerUnit;
+        const svgWrapper = document.getElementById("svg-wrapper");
+        if (svgWrapper) {
+            const transformString = `perspective(1200px) rotateX(48deg) rotateZ(-3deg) scale(1.15) translateX(${moveX + 24}vh) translateY(${moveY - 15}vh)`;
+            svgWrapper.style.transform = transformString;
+            svgWrapper.classList.add("is-focused");
+            
+            // 为遮挡条应用反向的transform，使其不跟随SVG的3D变换
+            const maskGroup = svgWrapper.querySelector('#viewport-edge-mask');
+            if (maskGroup) {
+                // 反向应用transform以抵消SVG的变换：缩放反向、旋转反向、平移反向
+                maskGroup.style.transform = `translateX(${-moveX - 24}vh) translateY(${-moveY + 15}vh) scale(0.8695652) rotateZ(3deg) rotateX(-48deg)`;
+                maskGroup.style.transformOrigin = "center";
+            }
+        }
+        Object.keys(coreRegionsConfig).forEach(otherId => {
+            const otherEl = document.getElementById(otherId);
+            if (otherEl) {
+                otherEl.style.opacity = (otherId === id) ? '1' : '0.3';
+                if (otherEl._textureOverlay) {
+                    otherEl._textureOverlay.style.opacity = (otherId === id) ? '0.75' : '0.2';
+                }
+            }
+        });
+        const introSection = document.getElementById("intro-section");
+        if (introSection) introSection.classList.add("hidden");
+    };
+
     function setupInteractions() {
         const originalIntroText = introSection.innerHTML;
         let introHoverTimeout;
@@ -314,25 +377,18 @@ document.addEventListener("DOMContentLoaded", () => {
             // 恢复试图缩放与3D倾斜设置
             // 为了维持高清抗锯齿，基础缩放值配合 CSS 修改为了 0.5
             svgWrapper.style.transform = "perspective(1200px) rotateX(0deg) rotateZ(0deg) scale(0.5) translate(0, 0)";
+            
+            // 重置遮挡条的transform
+            const maskGroup = svgWrapper.querySelector('#viewport-edge-mask');
+            if (maskGroup) {
+                maskGroup.style.transform = "none";
+            }
         });
 
+        // 地区元素的事件处理
         Object.keys(coreRegionsConfig).forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
-
-            el.addEventListener("mouseenter", () => {
-                if (infoCard.classList.contains("hidden")) {
-                    const data = huizhouData[id];
-                    if (data) {
-                        clearTimeout(introHoverTimeout);
-                        introSection.classList.add("fade-out");
-                        introHoverTimeout = setTimeout(() => {
-                            introSection.innerHTML = `<p><strong>${data.title}</strong></p><p>${data.desc}</p>`;
-                            introSection.classList.remove("fade-out");
-                        }, 250);
-                    }
-                }
-            });
 
             el.addEventListener("mouseleave", () => {
                 if (infoCard.classList.contains("hidden")) {
@@ -348,138 +404,115 @@ document.addEventListener("DOMContentLoaded", () => {
             el.addEventListener("click", (e) => {
                 const isCardVisible = !infoCard.classList.contains("hidden");
 
-                // 1. ����л�
+                // 1. 隐藏切换
                 introSection.classList.add("hidden");
                 svgWrapper.classList.add("is-focused");
 
-                // ��ʼ����ͼ�����涯�Ӳ˵�
+                // 初始化左上方选择栏子菜单
                 if (window.openSubMenuForCounty) {
                     window.openSubMenuForCounty(id);
                 }
 
-                // 2. ƽ�������Ҳ࿨Ƭ����
+                // 2. 平滑过渡与信息卡更新
                 if (isCardVisible) {
                     infoCard.classList.add("hidden");
                     setTimeout(() => {
-                        updateCardInfo(id);
-                        infoCard.classList.remove("hidden");
+                        updateCardInfoAsync(id).then(() => infoCard.classList.remove("hidden"));
                     }, 350); 
                 } else {
-                    updateCardInfo(id);
-                    infoCard.classList.remove("hidden");
+                    updateCardInfoAsync(id).then(() => infoCard.classList.remove("hidden"));
                 }
 
                 // 3. 产生极其精细的 3D 视图与追踪聚焦
-                const bbox = el.getBBox();
-                const targetX = bbox.x + bbox.width / 2;
-                const targetY = bbox.y + bbox.height / 2;
-                
-                // 原 SVG viewBox 大小 757.5 x 821，基准内部中心点坐标
-                const cx = 378.75;
-                const cy = 410.5;
-                
-                // SVG 在容器实际渲染高度已改为 180vh 保存抗锯齿，求换算系数
-                const vhPerUnit = 180 / 821; 
-                
-                // 为了让任意县在任意缩放都能绝对居中，计算其对准 cx,cy 所需补足的平移全距离 (vh单位)
-                const moveX = (cx - targetX) * vhPerUnit;
-                const moveY = (cy - targetY) * vhPerUnit;
-
-                // 为了把视觉焦点向右上调整，加入 X+20vh（往右移动画布）和 Y-15vh（往上移动画布）的补偿，使屏幕视角锁定在选定县的右上方
-                // 同时把 scale 改为 1.15 倍（相当于原本 2.3 倍超大特写距），能让镜头拉得更近、特写更清晰
-                svgWrapper.style.transform = `perspective(1200px) rotateX(48deg) rotateZ(-3deg) scale(1.15) translateX(${moveX + 24}vh) translateY(${moveY - 15}vh)`;
-
-                // 4. 其他没选中的区域变暗和纹理变淡
-                Object.keys(coreRegionsConfig).forEach(otherId => {
-                    const otherEl = document.getElementById(otherId);
-                    if (otherEl) {
-                        otherEl.style.opacity = (otherId === id) ? '1' : '0.3'; 
-                        if (otherEl._textureOverlay) {
-                            otherEl._textureOverlay.style.opacity = (otherId === id) ? '0.75' : '0.2';
-                        }
-                    }
-                });
+                window.focusCountyOnMap(id);
             });
         });
     }
 
     window.showArchCardInfo = function(id, countyId) { 
-    const metaList = bgArchData[countyId]; 
-    const meta = metaList.find(i => i.id === id); 
-    if(!meta) return; 
+    const metaList = bgArchData[countyId];
+    const meta = metaList.find(i => i.id === id);
+    if(!meta) return;
 
-    const introSection = document.getElementById("intro-section"); 
-    const infoCard = document.getElementById("info-card"); 
+    if (window.focusCountyOnMap) window.focusCountyOnMap(countyId);
+
+    const introSection = document.getElementById("intro-section");
+    const infoCard = document.getElementById("info-card");
     const isCardVisible = !infoCard.classList.contains("hidden");
 
-    introSection.classList.add("hidden"); 
+    introSection.classList.add("hidden");
 
-    const performUpdate = () => {
-        document.getElementById("card-county-seal").src = "./seal/" + countyId + ".png"; 
-        document.getElementById("card-title").textContent = meta.name; 
-        document.getElementById("card-subtitle").textContent = "[" + coreRegionsConfig[countyId].name + "] " + meta.typeName; 
-        const descEl = document.getElementById("card-desc"); 
-        if(descEl) descEl.innerHTML = "���ڼ�������..."; 
-        if(meta.markdown) { 
-            fetch(meta.markdown).then(r => r.text()).then(md => { 
-                const html = window.marked ? window.marked.parse(md) : md; 
-                if(descEl) descEl.innerHTML = html; 
-            }).catch(e => { 
-                if(descEl) descEl.innerHTML = "��������ʧ��"; 
-            }); 
-        } 
-        
-        const placeholder = document.querySelector(".card-image-placeholder"); 
-        if(placeholder) { 
-            placeholder.style.height = ''; 
+    let imgPromise = Promise.resolve('');
+    if (meta.image) {
+        imgPromise = new Promise(resolve => {
+            processTransparentLineArt(meta.image, resolve);
+        });
+    }
+
+    const performUpdateAndShow = (dataUrl) => {
+        document.getElementById("card-county-seal").src = "./seal/" + countyId + ".png";
+        document.getElementById("card-title").textContent = meta.name;
+        document.getElementById("card-subtitle").textContent = "[" + coreRegionsConfig[countyId].name + "] " + meta.typeName;
+        const descEl = document.getElementById("card-desc");
+        if(descEl) descEl.innerHTML = "正在加载描述...";
+        if(meta.markdown) {
+            fetch(meta.markdown).then(r => r.text()).then(md => {
+                const html = window.marked ? window.marked.parse(md) : md;      
+                if(descEl) descEl.innerHTML = html;
+            }).catch(e => {
+                if(descEl) descEl.innerHTML = "加载失败";
+            });
+        }
+
+        const placeholder = document.querySelector(".card-image-placeholder");  
+        if(placeholder) {
+            placeholder.style.height = '';
             placeholder.style.background = '';
             placeholder.style.overflow = '';
-            if(meta.image) {
-                placeholder.innerHTML = "<img id=\"card-main-image\" src=\"\" style=\"width:100%; max-height:300px; object-fit:contain;\"/>";
-                processTransparentLineArt(meta.image, (dataUrl) => { 
-                    const imgEl = document.getElementById("card-main-image"); 
-                    if(imgEl) imgEl.src = dataUrl; 
-                }); 
-            } else { 
-                placeholder.innerHTML = "<div class=\"placeholder-ink-graphic\"><svg viewBox=\"0 0 100 100\" class=\"ink-icon\"><path d=\"M10 80 L50 20 L90 80 Z\" fill=\"none\" stroke=\"#666\" stroke-width=\"2\"/></svg><span>���������߸�</span></div>"; 
-            } 
+            if(dataUrl) {
+                placeholder.innerHTML = '<img id="card-main-image" src="' + dataUrl + '" style="width:100%; max-height:300px; object-fit:contain;"/>';
+            } else {
+                placeholder.innerHTML = '<div class="placeholder-ink-graphic"><svg viewBox="0 0 100 100" class="ink-icon"><path d="M10 80 L50 20 L90 80 Z" fill="none" stroke="#666" stroke-width="2"/></svg><span>暂无建筑线稿</span></div>';
+            }
         }
-        
         infoCard.classList.remove("hidden");
     };
 
     if (isCardVisible) {
         infoCard.classList.add("hidden");
-        setTimeout(performUpdate, 350);
+        Promise.all([imgPromise, new Promise(r => setTimeout(r, 350))]).then(([dataUrl]) => performUpdateAndShow(dataUrl));
     } else {
-        performUpdate();
+        imgPromise.then(dataUrl => performUpdateAndShow(dataUrl));
     }
 }
 
       function processTransparentLineArt(imgSrc, callback) { const img = new Image(); img.crossOrigin = "Anonymous"; img.onload = () => { try { const canvas = document.createElement("canvas"); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext("2d"); ctx.drawImage(img, 0, 0); const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height); const data = imgData.data; for (let i = 0; i < data.length; i += 4) { const r = data[i], g = data[i+1], b = data[i+2]; if (r > 200 && g > 200 && b > 200) { data[i+3] = 0; } } ctx.putImageData(imgData, 0, 0); callback(canvas.toDataURL("image/png")); } catch(e) { callback(imgSrc); } }; img.onerror = () => callback(imgSrc); img.src = imgSrc; }
 
-      function updateCardInfo(id) {
+      function updateCardInfoAsync(id) {
+    return new Promise(resolve => {
         const data = huizhouData[id];
-        if(!data) return;
+        if(!data) return resolve();
 
-document.getElementById("card-county-seal").src = `./seal/${id}.png`;
+        document.getElementById("card-county-seal").src = './seal/' + id + '.png';
         document.getElementById("card-title").textContent = data.title;
-        document.getElementById("card-subtitle").textContent = data.subtitle;
+        document.getElementById("card-subtitle").textContent = data.subtitle;   
         document.getElementById("card-desc").textContent = data.desc;
 
         const placeholder = document.querySelector(".card-image-placeholder");  
-          if(placeholder) {
-              placeholder.style.height = 'auto';
-              placeholder.style.background = 'transparent';
-              placeholder.style.overflow = 'visible';
-                placeholder.innerHTML = "<img id='card-main-image' src='' style='width:100%; height:auto; display:block; -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%); mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%);'/>";
-              processTransparentLineArt(`./county/${id}.png`, (dataUrl) => {
-                  const imgEl = document.getElementById("card-main-image");
-                  if(imgEl) imgEl.src = dataUrl;
-              });          }
-    }
-
-    // 绘制标签 (原有逻辑简化版)
+        if(placeholder) {
+            placeholder.style.height = 'auto';
+            placeholder.style.background = 'transparent';
+            placeholder.style.overflow = 'visible';
+            
+            processTransparentLineArt('./county/' + id + '.png', (dataUrl) => {    
+                placeholder.innerHTML = '<img id="card-main-image" src="' + dataUrl + '" style="width:100%; height:auto; display:block; -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%); mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%);"/>';
+                resolve();
+            });
+        } else {
+            resolve();
+        }
+    });
+}
     function generateLabels(svgElement) {
         // 首先绘制背景地名，不抢核心地界风头
         Object.keys(contextRegionsConfig).forEach(id => {
